@@ -2,14 +2,14 @@
 <head>
     <link href="./static/css/bootstrap.css" rel="stylesheet">
     <link href="./static/css/custom.css" rel="stylesheet">
-
+    <script src="./static/js/jquery.js"></script>
 </head>
 <body>
     <div class="container" id="container">
         <div class="row">
             <div class="col-xs-10 col-xs-offset-1">
 
-                <form action="/save" method="POST" class="form-horizontal">
+                <form class="form-horizontal" id="form">
 
                 <div class="form-group">
                     <label for="url">URL</label>
@@ -20,7 +20,55 @@
                     </div>
                 </form>
             </div>
+            <div class="col-xs-10 col-xs-offset-1">
+                <table id="results" class="table table-striped table-hover">
+                </table>
+            </div>
         </div>
     </div>
+    <script>
+
+        function addRow( status, content ) {
+            var c = "info"
+            switch( status ) {
+                case 200:
+                    c = "success"
+                    break;
+                case 500:
+                    c = "danger"
+                    break;
+            }
+            var newRow = $(
+                '<tr class="' + c + '"><td>' + status + ' </td>'
+                + '<td>' + content + '</td>'
+                + '</tr>'
+            )
+            $('#results').append( newRow )
+        }
+
+        $( function() {
+            console.log("DOM Loaded")
+
+            $('#form').submit( function( e ) {
+                e.preventDefault()
+
+                var $form = $( this )
+                var url = $form.find( "#url" ).val()
+                var target = $form.attr( "action" )
+
+                // Send the data using post
+                var posting = $.post( '/save', { url: url })
+
+                posting.done( function( data, zwei, drei ) {
+                    var contentType = drei.getResponseHeader('content-type')
+                    console.log(drei.status)
+                    if( contentType.indexOf('html') > -1 )
+                        addRow( drei.status, "Some HTML.. " )
+                    else
+                        addRow( drei.status, data )
+                })
+            })
+        } )
+    </script>
 </body>
 </html>
