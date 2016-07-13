@@ -4,6 +4,7 @@ import (
     "io"
     "io/ioutil"
     "path/filepath"
+	"bytes"
     "fmt"
     "html/template"
     "log"
@@ -11,6 +12,7 @@ import (
     "net/url"
     "os"
     "strings"
+	"os/exec"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +54,24 @@ func getFileNameFromURL( _url string ) string {
     i := strings.LastIndex( str, "/" )
     return str[ i + 1 : len( str ) ]
 
+func convertBook(inPathAndFilename string, format string) (outPathAndFileName string) {
+	outPathAndFilename = inPathAndFilename + format
+	cmd := exec.Command("ebook-convert", inPathAndFilename, outPathAndFilename)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil{
+		log.Fatal(err)
+	}
+	log.Print("out:%s",out.String())
 }
+
+
+func cleanAndDisarm(string inPathAndFilename) (inPathAndFilename string) {
+	charsToRemove = "'\"\\`{[(<>)]}^|!?#$*%&=$ ;,:."
+	inPathAndFilename.translate(None, charsToRemove)
+}
+
 
 func getBook( book_url string ) ( err error, fileName string, filePath string ) {
 
@@ -87,10 +106,13 @@ func getBook( book_url string ) ( err error, fileName string, filePath string ) 
 func post_handler(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
     book_url := r.FormValue("url")
-//    fmt.Fprintf(w, "path:%s<br>", r.URL.Path[1:])
     fmt.Fprintf(w, "%s", book_url)
-    // validate res
-    getBook(book_url)
+
+	// inPathAndFilename = cleanAndDisarm(getBook(bookUrl))
+	inPathAndFilename := "/tmp/book.pdf"
+	format = ".mobi"
+
+	err, outPathAndFilename := convertBook(inPathAndFilename, format)
 }
 
 
