@@ -13,6 +13,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/", indexHandler)
+    http.HandleFunc("/", indexHandler)
+
+    static := http.FileServer( http.Dir( "static" ) )
+    http.Handle("/static/", http.StripPrefix("/static/", static))
+
 	http.ListenAndServe(":8080", nil)
 }
