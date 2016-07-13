@@ -57,7 +57,7 @@
                 var target = $form.attr( "action" )
 
                 // Send the data using post
-                var posting = $.post( '/save', { url: url })
+                var posting = $.post( '/book', { url: url })
 
                 posting.done( function( data, zwei, drei ) {
                     var contentType = drei.getResponseHeader('content-type')

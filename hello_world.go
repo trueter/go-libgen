@@ -20,9 +20,9 @@ func getBook(book_url string){
 
 func post_handler(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
-    book_url := r.FormValue("book_url")
-    fmt.Fprintf(w, "path:%s<br>", r.URL.Path[1:])
-    fmt.Fprintf(w, "book_url:%s<br>", book_url)
+    book_url := r.FormValue("url")
+//    fmt.Fprintf(w, "path:%s<br>", r.URL.Path[1:])
+    fmt.Fprintf(w, "%s", book_url)
     // validate res
     getBook(book_url)
 }
