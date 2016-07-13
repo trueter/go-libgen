@@ -27,9 +27,38 @@
         </div>
     </div>
     <script>
+        // jQuery Shortcut for:
+        // Execute once the DOM has finished loading and
+        // I can safely attach event handlers
+        $( function() {
+
+            $('#form').submit( handleFormSubmission )
+        } )
+
+        function handleFormSubmission( function( e ) {
+            e.preventDefault()
+
+            var $form = $( this )
+            var url = $form.find( "#url" ).val()
+            var target = $form.attr( "action" )
+
+            // Send the data using post
+            var posting = $.post( '/save', { url: url })
+
+            posting.done( function( content, _, xhr ) {
+                var contentType = xhr.getResponseHeader('content-type')
+                var containsHTML = contentType.indexOf('html') > -1
+
+                addRow(
+                    xhr.status,
+                    containsHTML ? '<html>..</html>' : content
+                )
+            })
+        } )
+
 
         function addRow( status, content ) {
-            var c = "info"
+            var c
             switch( status ) {
                 case 200:
                     c = "success"
@@ -37,38 +66,18 @@
                 case 500:
                     c = "danger"
                     break;
+                default:
+                    c = "info"
+                    break;
             }
             var newRow = $(
-                '<tr class="' + c + '"><td>' + status + ' </td>'
-                + '<td>' + content + '</td>'
-                + '</tr>'
+                '<tr class="' + c + '"><td>' + status + ' </td>' +
+                    '<td>' + content + '</td>' +
+                '</tr>'
             )
             $('#results').append( newRow )
         }
 
-        $( function() {
-            console.log("DOM Loaded")
-
-            $('#form').submit( function( e ) {
-                e.preventDefault()
-
-                var $form = $( this )
-                var url = $form.find( "#url" ).val()
-                var target = $form.attr( "action" )
-
-                // Send the data using post
-                var posting = $.post( '/book', { url: url })
-
-                posting.done( function( data, zwei, drei ) {
-                    var contentType = drei.getResponseHeader('content-type')
-                    console.log(drei.status)
-                    if( contentType.indexOf('html') > -1 )
-                        addRow( drei.status, "Some HTML.. " )
-                    else
-                        addRow( drei.status, data )
-                })
-            })
-        } )
     </script>
 </body>
 </html>
