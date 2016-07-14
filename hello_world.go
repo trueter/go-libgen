@@ -4,15 +4,16 @@ import (
     "io"
     "io/ioutil"
     "path/filepath"
-	"bytes"
+    "bytes"
     "fmt"
     "html/template"
     "log"
     "net/http"
     "net/url"
     "os"
+    "os/exec"
     "strings"
-	"os/exec"
+
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,24 +54,44 @@ func getFileNameFromURL( _url string ) string {
 
     i := strings.LastIndex( str, "/" )
     return str[ i + 1 : len( str ) ]
+}
 
-func convertBook(inPathAndFilename string, format string) (outPathAndFileName string) {
-	outPathAndFilename = inPathAndFilename + format
-	cmd := exec.Command("ebook-convert", inPathAndFilename, outPathAndFilename)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil{
-		log.Fatal(err)
-	}
-	log.Print("out:%s",out.String())
+func convertBook(tmpPathAndFileName string, outFilename string, format string) (err error, outPathAndFileName string) {
+
+    i := strings.LastIndex( tmpPathAndFileName, "/" )
+    tmpPath := tmpPathAndFileName[0:i]
+    log.Print("tmp Path:%s",tmpPath)
+
+    err = os.Rename(tmpPathAndFileName, tmpPathAndFileName + ".pdf")
+    tmpPathAndFileName = tmpPathAndFileName + ".pdf"
+
+    outPathAndFilename := tmpPath + "/" + outFilename + format
+    log.Print("tmpPathAndFileName:%s",tmpPathAndFileName)
+    log.Print("outPathAndFilename:%s",outPathAndFilename)
+
+
+    if err != nil{
+        return err, ""
+    }
+
+    cmd := exec.Command("ebook-convert", tmpPathAndFileName, outPathAndFilename)
+    var out bytes.Buffer
+    cmd.Stdout = &out
+    err = cmd.Run()
+    if err != nil{
+        return err, ""
+    }
+    log.Print("out:%s",out.String())
+
+    return nil, outPathAndFileName
 }
 
 
-func cleanAndDisarm(string inPathAndFilename) (inPathAndFilename string) {
-	charsToRemove = "'\"\\`{[(<>)]}^|!?#$*%&=$ ;,:."
-	inPathAndFilename.translate(None, charsToRemove)
-}
+// func cleanAndDisarm( inPathAndFilename string ) string {
+//     charsToRemove := "'\"\\`{[(<>)]}^|!?#$*%&=$ ;,:."
+//     inPathAndFilename.translate( None, charsToRemove )
+//     return inPathAndFilename
+// }
 
 
 func getBook( book_url string ) ( err error, fileName string, filePath string ) {
@@ -108,28 +129,56 @@ func post_handler(w http.ResponseWriter, r *http.Request) {
     book_url := r.FormValue("url")
     fmt.Fprintf(w, "%s", book_url)
 
-	// inPathAndFilename = cleanAndDisarm(getBook(bookUrl))
-	inPathAndFilename := "/tmp/book.pdf"
-	format = ".mobi"
 
-	err, outPathAndFilename := convertBook(inPathAndFilename, format)
+    format := ".mobi"
+
+    //
+    err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
+    if err != nil {
+        panic( err )
+    }
+
+    // filePath = cleanAndDisarm( filePath )
+
+    outFilename = outFilename
+    fmt.Println("outFilename ", outFilename )
+    fmt.Println("filePath ", filePath )
+    //
+
+    err, outPathAndFilename := convertBook(filePath, outFilename, format)
+    fmt.Println("outPathAndFilename ", outPathAndFilename )
+
 }
 
 
 
 func main() {
+
+
+
+    format := ".mobi"
+
+    err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
+    if err != nil {
+        panic( err )
+    }
+
+    // filePath = cleanAndDisarm( filePath )
+
+    outFilename = outFilename
+    fmt.Println("outFilename ", outFilename )
+    fmt.Println("filePath ", filePath )
+    //
+
+    err, outPathAndFilename := convertBook(filePath, outFilename, format)
+    fmt.Println("outPathAndFilename ", outPathAndFilename )
+    if err != nil {
+        panic( err )
+    }
+
     http.HandleFunc("/", indexHandler)
     static := http.FileServer( http.Dir( "static" ) )
     http.Handle("/static/", http.StripPrefix("/static/", static))
     http.HandleFunc("/book", post_handler)
     log.Fatal(http.ListenAndServe(":8080", nil))
-
-    err, fileName, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
-    if err != nil {
-        panic( err )
-    }
-
-    fmt.Println("fileName ", fileName )
-    fmt.Println("filePath ", filePath )
-
 }
