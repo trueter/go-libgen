@@ -1,0 +1,3 @@
+this is a conseptual rewrite, trying to split the app in independant simple components
+
+needs redis, nohub, killall
