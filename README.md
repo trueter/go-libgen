@@ -23,13 +23,13 @@ Local code execution not unlikely.
 
 
 tbd:
--[ ] write tests
--[ ] add email function
--[ ] make sure all imput is sanetized
--[ ] escape dangerous characters in book file names
--[ ] find a way to exec ebook-convert with the least privileges.. Sandbox if possible.
--[ ] add convert_to_format choice
--[ ] much more
+- [ ] write tests
+- [ ] add email function
+- [ ] make sure all imput is sanetized
+- [ ] escape dangerous characters in book file names
+- [ ] find a way to exec ebook-convert with the least privileges.. Sandbox if possible.
+- [ ] add convert_to_format choice
+- [ ] much more
 
 
 
