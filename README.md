@@ -20,6 +20,7 @@ Warning, don't use on public networks:
 the programm still contains a user controlled remote triggerable local file overwrite bug/vulnerabillety.
 Input passed to ebook-convert should be sanetized to not hold any specail characters (.. ../ / . ^ &    and so on)
 Local code execution not unlikely. 
+allso vulnerable to: https://httpoxy.org/
 
 
 tbd:
