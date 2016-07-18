@@ -1,7 +1,7 @@
 # go-libgen
 eBook conversion utility service prototype with webfronten and email function
 
-depends on calibres ebook-convert bin
+depends on calibres ebook-convert bin (https://calibre-ebook.com/)
 ``` bash
 install dependancy: (pacman -S|apt install|brew install) calibre
 
