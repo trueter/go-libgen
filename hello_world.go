@@ -214,9 +214,12 @@ func main() {
     //     panic( err )
     // }
 
-    http.HandleFunc("/", indexHandler)
+    http.HandleFunc( "/", indexHandler )
+
     static := http.FileServer( http.Dir( "static" ) )
-    http.Handle("/static/", http.StripPrefix("/static/", static))
-    http.HandleFunc("/book", post_handler)
-    log.Fatal(http.ListenAndServe(":8080", nil))
+
+    http.Handle( "/static/", http.StripPrefix( "/static/", static ) )
+    http.HandleFunc( "/book", post_handler )
+
+    log.Fatal( http.ListenAndServe( ":8080", nil ) )
 }
