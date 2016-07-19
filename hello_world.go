@@ -140,7 +140,7 @@ func getBook( book_url string ) ( err error, fileName string, filePath string ) 
 }
 
 func pushTask( taskJSONPayload []byte ) ( err error ) {
-    fmt.Println("JSON ", taskJSONPayload )
+    // fmt.Println("JSON ", taskJSONPayload )
 
     str := string( taskJSONPayload )
 
@@ -163,12 +163,12 @@ func post_handler(w http.ResponseWriter, r *http.Request) {
 
     task := &Task{
         UUID     : uuid.NewV4().String(),
-        SourceURL: r.FormValue("url"),
-        Format   : r.FormValue("format"),
-        Email    : r.FormValue("email"),
+        SourceURL: r.FormValue( "url" ),
+        Format   : r.FormValue( "format" ),
+        Email    : r.FormValue( "email" ),
         Status   : "created"}
 
-    fmt.Println("Task %s\n", task )
+    fmt.Println( "Task %s\n", task )
 
     responseJSON, err := json.Marshal( task )
     if err != nil {
@@ -209,6 +209,46 @@ func post_handler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func callback( task Task ) {
+
+    // File: os.File
+
+    file, err := ioutil.TempFile( "", "download" )
+    if err != nil {
+        panic( err )
+    }
+
+
+
+    // fmt.Println("Received ", taskPayloadJSON )
+    fmt.Println("Temp File ", file.Name() )
+    fmt.Println("Task", task )
+
+}
+
+func observe() {
+
+    pubsub, err := client.Subscribe("tasks")
+    if err != nil {
+        panic(err)
+    }
+    for {
+
+        msg, err := pubsub.ReceiveMessage()
+
+        if err != nil {
+            panic(err)
+        }
+
+        var task Task
+        err = json.Unmarshal( []byte( msg.Payload ), &task )
+        if err != nil {
+            panic(err)
+        }
+
+        callback( task )
+    }
+}
 
 func main() {
 
@@ -217,6 +257,10 @@ func main() {
         Password: "", // no password set
         DB:       0,  // use default DB
     })
+
+    go observe()
+
+
 
     // format := ".mobi"
 
@@ -245,7 +289,7 @@ func main() {
     http.Handle( "/static/", http.StripPrefix( "/static/", static ) )
     http.HandleFunc( "/save", post_handler )
 
-    log.Fatal( http.ListenAndServe( ":8080", nil ) )
+    log.Fatal( http.ListenAndServe( ":3001", nil ) )
 }
 
 
