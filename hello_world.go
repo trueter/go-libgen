@@ -1,6 +1,7 @@
 package main
 
 import (
+    "encoding/json"
     "io"
     "io/ioutil"
     "path/filepath"
@@ -152,26 +153,38 @@ func post_handler(w http.ResponseWriter, r *http.Request) {
 
     err := pushTask( task )
     if err != nil {
-        panic( err )
+        http.Error( w, err.Error(), http.StatusInternalServerError )
+        return
     }
 
-    format := ".mobi"
-
-    //
-    err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
+    responseJSON, err := json.Marshal( task )
     if err != nil {
-        panic( err )
+        http.Error( w, err.Error(), http.StatusInternalServerError )
+        return
     }
 
-    // filePath = cleanAndDisarm( filePath )
 
-    outFilename = outFilename
-    fmt.Println("outFilename ", outFilename )
-    fmt.Println("filePath ", filePath )
-    //
+    w.WriteHeader( 200 )
+    w.Header().Set( "Content-Type", "application/json" )
+    w.Write( responseJSON )
 
-    err, outPathAndFilename := convertBook(filePath, outFilename, format)
-    fmt.Println("outPathAndFilename ", outPathAndFilename )
+    // format := ".mobi"
+
+    // //
+    // err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
+    // if err != nil {
+    //     panic( err )
+    // }
+
+    // // filePath = cleanAndDisarm( filePath )
+
+    // outFilename = outFilename
+    // fmt.Println("outFilename ", outFilename )
+    // fmt.Println("filePath ", filePath )
+    // //
+
+    // err, outPathAndFilename := convertBook(filePath, outFilename, format)
+    // fmt.Println("outPathAndFilename ", outPathAndFilename )
 
 }
 
@@ -181,25 +194,25 @@ func main() {
 
 
 
-    format := ".mobi"
+    // format := ".mobi"
 
-    err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
-    if err != nil {
-        panic( err )
-    }
+    // err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
+    // if err != nil {
+    //     panic( err )
+    // }
 
-    // filePath = cleanAndDisarm( filePath )
+    // // filePath = cleanAndDisarm( filePath )
 
-    outFilename = outFilename
-    fmt.Println("outFilename ", outFilename )
-    fmt.Println("filePath ", filePath )
-    //
+    // outFilename = outFilename
+    // fmt.Println("outFilename ", outFilename )
+    // fmt.Println("filePath ", filePath )
+    // //
 
-    err, outPathAndFilename := convertBook(filePath, outFilename, format)
-    fmt.Println("outPathAndFilename ", outPathAndFilename )
-    if err != nil {
-        panic( err )
-    }
+    // err, outPathAndFilename := convertBook(filePath, outFilename, format)
+    // fmt.Println("outPathAndFilename ", outPathAndFilename )
+    // if err != nil {
+    //     panic( err )
+    // }
 
     http.HandleFunc("/", indexHandler)
     static := http.FileServer( http.Dir( "static" ) )
