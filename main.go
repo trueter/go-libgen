@@ -211,6 +211,16 @@ func observeTaskQueue() {
 }
 
 
+func finalize( task Task ) {
+
+    task.Status = "done"
+
+    responseJSON, err := json.Marshal( task )
+
+    if err != nil {
+        panic( err )
+    }
+}
 
 func main() {
 
