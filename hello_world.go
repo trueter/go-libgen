@@ -32,7 +32,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
     t.Execute(w, nil)
 }
 
-func downloadInto( file * os.File , url string) (err error) {
+
+
+func download( file * os.File , url string) (err error) {
 
   // Get the data
   resp, err := http.Get(url)
@@ -116,7 +118,7 @@ func getBook( book_url string ) ( err error, fileName string, filePath string ) 
     }
 
 
-    err2 := downloadInto( file, book_url )
+    err2 := download( file, book_url )
     if err2 != nil {
         return err2, "", ""
     }
