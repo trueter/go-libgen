@@ -16,6 +16,16 @@ import (
 
 )
 
+
+type Task struct {
+    UUID string
+    sourceURL string
+    format string
+    email string
+    status string
+}
+
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
     t, _ := template.ParseFiles("form.html")
