@@ -12,6 +12,7 @@ import (
     "log"
     "net/http"
     "net/url"
+    "gopkg.in/redis.v4"
     "os"
     "os/exec"
     "strings"
@@ -25,6 +26,8 @@ type Task struct {
     email string
     status string
 }
+
+var client * redis.Client
 
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -137,6 +140,18 @@ func getBook( book_url string ) ( err error, fileName string, filePath string ) 
 }
 
 func pushTask( task Task ) ( err error ) {
+
+    redisResult := client.Publish("tasks", "hello")
+
+    err = redisResult.Err()
+    if err != nil {
+        return err
+    }
+
+
+
+    fmt.Println("Resul %s\n", redisResult.String() )
+
     return nil
 }
 
@@ -192,7 +207,11 @@ func post_handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-
+    client = redis.NewClient(&redis.Options{
+        Addr:     "localhost:6379",
+        Password: "", // no password set
+        DB:       0,  // use default DB
+    })
 
     // format := ".mobi"
 
