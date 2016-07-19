@@ -6,6 +6,9 @@ import (
 	"gopkg.in/redis.v4"
 )
 
+func redisHandler()(client redis.NewClient() )
+
+
 func main() {
 
 	client := redis.NewClient(&redis.Options{
@@ -18,6 +21,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// for eve
 	for {
 		pubsub, err := client.Subscribe("tasks")
 		if err != nil {
