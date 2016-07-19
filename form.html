@@ -35,7 +35,7 @@
             $('#form').submit( handleFormSubmission )
         } )
 
-        function handleFormSubmission( function( e ) {
+        function handleFormSubmission( e ) {
             e.preventDefault()
 
             var $form = $( this )
@@ -54,7 +54,7 @@
                     containsHTML ? '<html>..</html>' : content
                 )
             })
-        } )
+        }
 
 
         function addRow( status, content ) {
