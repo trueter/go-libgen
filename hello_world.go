@@ -194,25 +194,25 @@ func main() {
 
 
 
-    format := ".mobi"
+    // format := ".mobi"
 
-    err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
-    if err != nil {
-        panic( err )
-    }
+    // err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
+    // if err != nil {
+    //     panic( err )
+    // }
 
-    // filePath = cleanAndDisarm( filePath )
+    // // filePath = cleanAndDisarm( filePath )
 
-    outFilename = outFilename
-    fmt.Println("outFilename ", outFilename )
-    fmt.Println("filePath ", filePath )
-    //
+    // outFilename = outFilename
+    // fmt.Println("outFilename ", outFilename )
+    // fmt.Println("filePath ", filePath )
+    // //
 
-    err, outPathAndFilename := convertBook(filePath, outFilename, format)
-    fmt.Println("outPathAndFilename ", outPathAndFilename )
-    if err != nil {
-        panic( err )
-    }
+    // err, outPathAndFilename := convertBook(filePath, outFilename, format)
+    // fmt.Println("outPathAndFilename ", outPathAndFilename )
+    // if err != nil {
+    //     panic( err )
+    // }
 
     http.HandleFunc("/", indexHandler)
     static := http.FileServer( http.Dir( "static" ) )
