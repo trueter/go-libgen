@@ -1,11 +1,11 @@
 package main
 
 import (
+    "bytes"
     "encoding/json"
     "io"
     "io/ioutil"
     "path/filepath"
-    "bytes"
     "fmt"
     "github.com/satori/go.uuid"
     "html/template"
@@ -21,10 +21,10 @@ import (
 
 type Task struct {
     UUID string
-    sourceURL string
-    format string
-    email string
-    status string
+    SourceURL string `json:"sourceURL"`
+    Format string    `json:"format"`
+    Email string     `json:"email"`
+    Status string    `json:"status"`
 }
 
 var client * redis.Client
@@ -139,9 +139,12 @@ func getBook( book_url string ) ( err error, fileName string, filePath string ) 
     // os.Remove(file.Name())
 }
 
-func pushTask( task Task ) ( err error ) {
+func pushTask( taskJSONPayload []byte ) ( err error ) {
+    fmt.Println("JSON ", taskJSONPayload )
 
-    redisResult := client.Publish("tasks", "hello")
+    str := string( taskJSONPayload )
+
+    redisResult := client.Publish( "tasks", str )
 
     err = redisResult.Err()
     if err != nil {
@@ -149,8 +152,7 @@ func pushTask( task Task ) ( err error ) {
     }
 
 
-
-    fmt.Println("Resul %s\n", redisResult.String() )
+    fmt.Println("Result %s\n", redisResult.String() )
 
     return nil
 }
@@ -159,20 +161,23 @@ func post_handler(w http.ResponseWriter, r *http.Request) {
 
     r.ParseForm()
 
-    task := Task{
+    task := &Task{
         UUID     : uuid.NewV4().String(),
-        sourceURL: r.FormValue("url"),
-        format   : r.FormValue("format"),
-        email    : r.FormValue("email"),
-        status   : "created"}
+        SourceURL: r.FormValue("url"),
+        Format   : r.FormValue("format"),
+        Email    : r.FormValue("email"),
+        Status   : "created"}
 
-    err := pushTask( task )
+    fmt.Println("Task %s\n", task )
+
+    responseJSON, err := json.Marshal( task )
     if err != nil {
         http.Error( w, err.Error(), http.StatusInternalServerError )
         return
     }
 
-    responseJSON, err := json.Marshal( task )
+
+    err = pushTask( responseJSON )
     if err != nil {
         http.Error( w, err.Error(), http.StatusInternalServerError )
         return
@@ -238,7 +243,10 @@ func main() {
     static := http.FileServer( http.Dir( "static" ) )
 
     http.Handle( "/static/", http.StripPrefix( "/static/", static ) )
-    http.HandleFunc( "/book", post_handler )
+    http.HandleFunc( "/save", post_handler )
 
     log.Fatal( http.ListenAndServe( ":8080", nil ) )
 }
+
+
+// http://unec.edu.az/application/uploads/2014/12/pdf-sample.pdf
