@@ -6,6 +6,7 @@ import (
     "path/filepath"
     "bytes"
     "fmt"
+    "github.com/satori/go.uuid"
     "html/template"
     "log"
     "net/http"
@@ -13,7 +14,6 @@ import (
     "os"
     "os/exec"
     "strings"
-
 )
 
 
@@ -135,12 +135,25 @@ func getBook( book_url string ) ( err error, fileName string, filePath string ) 
     // os.Remove(file.Name())
 }
 
+func pushTask( task Task ) ( err error ) {
+    return nil
+}
 
 func post_handler(w http.ResponseWriter, r *http.Request) {
-    r.ParseForm()
-    book_url := r.FormValue("url")
-    fmt.Fprintf(w, "%s", book_url)
 
+    r.ParseForm()
+
+    task := Task{
+        UUID     : uuid.NewV4().String(),
+        sourceURL: r.FormValue("url"),
+        format   : r.FormValue("format"),
+        email    : r.FormValue("email"),
+        status   : "created"}
+
+    err := pushTask( task )
+    if err != nil {
+        panic( err )
+    }
 
     format := ".mobi"
 
