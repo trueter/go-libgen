@@ -13,6 +13,7 @@ import (
     "net/http"
     "net/url"
     "gopkg.in/redis.v4"
+    "gopkg.in/gomail.v2"
     "os"
     "os/exec"
     "strings"
@@ -208,6 +209,31 @@ func post_handler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func mail( task Task, file * os.File ) {
+
+    SMTP_HOST := "smtp.gmail.com"
+    SENDER := "sender@example.org"
+    USER := "bkcnvrt@gmail.com"
+    PASSWORD := "PathAndTmpFile"
+    body := "Download Link:\n"
+
+    body = body + "http://torsten"
+
+    /////
+    m := gomail.NewMessage()
+    m.SetHeader( "From", SENDER )
+    m.SetHeader( "To", task.Email )
+    m.SetHeader( "Subject", "Ebkcnvrt" )
+    m.SetBody( "text/plain", body )
+    m.Attach( file.Name() )
+
+    d := gomail.NewPlainDialer( SMTP_HOST, 587, USER, PASSWORD )
+
+    // Send the email to Bob, Cora and Dan.
+    if err := d.DialAndSend( m ); err != nil {
+        panic(err)
+    }
+}
 
 func callback( task Task ) {
 
@@ -223,6 +249,7 @@ func callback( task Task ) {
     // fmt.Println("Received ", taskPayloadJSON )
     fmt.Println("Temp File ", file.Name() )
     fmt.Println("Task", task )
+    mail( task, file )
 
 }
 
