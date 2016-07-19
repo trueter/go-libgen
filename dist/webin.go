@@ -9,7 +9,6 @@ import (
 )
 
 
-
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
     t, _ := template.ParseFiles("static/form.html")
@@ -18,34 +17,34 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func addFetchTask(book_url string)(err error) {
-	fmt.Println(book_url)
-	return err
-}
-
-func post_handler(w http.ResponseWriter, r *http.Request) {
-
 
     client := redis.NewClient(&redis.Options{
         Addr:     "localhost:6379",
         Password: "", // no password set
         DB:       0,  // use default DB
     })
+    table:="toGet"
 
-    pong, err := client.Ping().Result()
-    fmt.Println(pong, err)
+    resp, err := client.RPush(table,book_url).Result()
+    fmt.Println("r:",resp)
+    return err
+}
+
+func post_handler(w http.ResponseWriter, r *http.Request) {
 
     r.ParseForm()
     book_url := r.FormValue("url")
-    err = addFetchTask( book_url )
+    err := addFetchTask( book_url )
 
     if err != nil {
         panic( err )
     }
-
+   
 }
 
 
 func main() {
+
     http.HandleFunc("/", indexHandler)
     http.HandleFunc("/book", post_handler)
     log.Fatal(http.ListenAndServe(":8080", nil))

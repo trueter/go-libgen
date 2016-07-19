@@ -19,6 +19,7 @@ function usage {
 }
 
 function up {
+	redis-server /usr/local/etc/redis.conf
 	nohub ./foo &
 	nohub ./bar &
 	exit
