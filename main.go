@@ -142,7 +142,7 @@ func pushTask( taskJSONPayload []byte ) ( err error ) {
 }
 
 
-func mail( task Task, file * os.File ) {
+func mail( task Task ) {
 
     SMTP_HOST := "smtp.gmail.com"
     SENDER := "sender@example.org"
@@ -166,6 +166,16 @@ func mail( task Task, file * os.File ) {
     if err := d.DialAndSend( m ); err != nil {
         panic(err)
     }
+
+    task.Status = "done"
+
+    responseJSON, err := json.Marshal( task )
+
+    if err != nil {
+        panic( err )
+    }
+
+    pushTask( responseJSON )
 }
 
 func callback( task Task ) {
@@ -182,7 +192,7 @@ func callback( task Task ) {
     // fmt.Println("Received ", taskPayloadJSON )
     fmt.Println("Temp File ", file.Name() )
     fmt.Println("Task", task )
-    mail( task, file )
+    mail( task )
 
 }
 
@@ -210,17 +220,6 @@ func observeTaskQueue() {
     }
 }
 
-
-func finalize( task Task ) {
-
-    task.Status = "done"
-
-    responseJSON, err := json.Marshal( task )
-
-    if err != nil {
-        panic( err )
-    }
-}
 
 func main() {
 
