@@ -4,9 +4,8 @@ import (
     "bytes"
     "encoding/json"
     "io"
-    "io/ioutil"
-    "path/filepath"
-    "fmt"
+    "github.com/satori/go.uuid"
+    "html/template"
     "log"
     "net/http"
     "net/url"
@@ -18,35 +17,56 @@ import (
 )
 
 
+type Task struct {
+    UUID string
+    SourceURL string `json:"sourceURL"`
+    Format string    `json:"format"`
+    Email string     `json:"email"`
+    Status string    `json:"status"`
+    FilePath string  `json:"filePath"`
+}
+
 var client * redis.Client
 
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+    t, _ := template.ParseFiles("form.html")
+    t.Execute(w, nil)
+}
 
 
-
-
-func download( file * os.File , url string) (err error) {
-
-  // Get the data
-  resp, err := http.Get(url)
-  if err != nil {
-    fmt.Printf( "err", err )
-    return err
-  }
-  // Uncomment to display body
-  // fmt.Printf( "resp", resp , "\n")
-  defer resp.Body.Close()
-
-  // Writer the body to file
-  _, err = io.Copy(file, resp.Body)
-  if err != nil  {
-    return err
-  }
-
+func mail(task Task) (err error) {
   return nil
 }
 
-func getFileNameFromURL( _url string ) string {
 
+func download(task Task) (err error) {
+    log.Print("Download Task Recieved: ", task)
+   // Create temp file
+    tmpDir := os.TempDir()
+    filePath := tmpDir + task.UUID
+
+    file, err := os.Create(filePath)
+    scream(err)
+    log.Print("Created Temp File at ", file.Name())
+
+    // Get the data
+    resp, err := http.Get(task.SourceURL)
+    scream(err)
+    defer resp.Body.Close()
+
+    // Writer the body to file
+    _, err = io.Copy(file, resp.Body)
+    scream(err)
+
+    // Update the task
+    task.Status = "downloaded"
+    log.Print("Download Task Complete: ", task)
+    // Update task queue
+    pushTask(task)
+    return nil
+}
+
+func getFileNameFromURL( _url string ) string {
     u, err := url.Parse( _url )
     if err != nil {
         panic( err )
@@ -58,166 +78,110 @@ func getFileNameFromURL( _url string ) string {
     return str[ i + 1 : len( str ) ]
 }
 
-func convertBook(tmpPathAndFileName string, outFilename string, format string) (err error, outPathAndFileName string) {
+func convert(task Task) (err error) {
+    // Assuming temp files are in tmp
+    tmpDir := os.TempDir()
+    tmpFile := tmpDir + task.UUID
+    pdfFile := tmpDir + task.UUID + ".pdf"
+    convertedFile := tmpDir + task.UUID + "." + task.Format
+    log.Print("tmp File:", tmpFile)
 
-    i := strings.LastIndex( tmpPathAndFileName, "/" )
-    tmpPath := tmpPathAndFileName[0:i]
-    log.Print("tmp Path:%s",tmpPath)
-
-    err = os.Rename(tmpPathAndFileName, tmpPathAndFileName + ".pdf")
-    tmpPathAndFileName = tmpPathAndFileName + ".pdf"
-
-    outPathAndFilename := tmpPath + "/" + outFilename + format
-    log.Print("tmpPathAndFileName:%s",tmpPathAndFileName)
-    log.Print("outPathAndFilename:%s",outPathAndFilename)
+    // Add PDF extension
+    err = os.Rename(tmpFile, pdfFile)
+    scream(err)
+    log.Print("PDF File: %s", pdfFile)
 
 
-    if err != nil{
-        return err, ""
-    }
+    cmd := exec.Command("ebook-convert", pdfFile, convertedFile)
 
-    cmd := exec.Command("ebook-convert", tmpPathAndFileName, outPathAndFilename)
     var out bytes.Buffer
     cmd.Stdout = &out
     err = cmd.Run()
-    if err != nil{
-        return err, ""
-    }
-    log.Print("out:%s",out.String())
+    scream(err)
+    log.Print("%s File: %s", convertedFile)
+    //    log.Print("out:%s",out.String()) ??
 
-    return nil, outPathAndFileName
-}
+    // Update the task
+    task.Status = "converted"
+    pushTask(task)
 
-
-// func cleanAndDisarm( inPathAndFilename string ) string {
-//     charsToRemove := "'\"\\`{[(<>)]}^|!?#$*%&=$ ;,:."
-//     inPathAndFilename.translate( None, charsToRemove )
-//     return inPathAndFilename
-// }
-
-
-func getBook( book_url string ) ( err error, fileName string, filePath string ) {
-
-    fileName = getFileNameFromURL( book_url )
-
-    fmt.Printf("filenam is %s\n", fileName )
-
-    file, err := ioutil.TempFile( "", "download" )
-    if err != nil {
-        return err, "", ""
-    }
-
-
-    err2 := download( file, book_url )
-    if err2 != nil {
-        return err2, "", ""
-    }
-
-    filePath, err3 := filepath.Abs( file.Name() )
-    if err3 != nil {
-        return err3, "", ""
-    }
-
-    fmt.Println("Prepared ", filePath )
-    return nil, fileName, filePath
-
-
-    // os.Remove(file.Name())
-}
-
-func pushTask( taskJSONPayload []byte ) ( err error ) {
-    // fmt.Println("JSON ", taskJSONPayload )
-
-    str := string( taskJSONPayload )
-
-    redisResult := client.Publish( "tasks", str )
-
-    err = redisResult.Err()
-    if err != nil {
-        return err
-    }
-
-    // fmt.Println( "Result %s\n", redisResult.String() )
     return nil
 }
 
 
-func mail( task Task ) {
-
-    SMTP_HOST := "smtp.gmail.com"
-    SENDER := "sender@example.org"
-    USER := "bkcnvrt@gmail.com"
-    PASSWORD := "PathAndTmpFile"
-    body := "Download Link:\n"
-
-    body = body + "http://torsten"
-
-    /////
-    m := gomail.NewMessage()
-    m.SetHeader( "From", SENDER )
-    m.SetHeader( "To", task.Email )
-    m.SetHeader( "Subject", "Ebkcnvrt" )
-    m.SetBody( "text/plain", body )
-    m.Attach( file.Name() )
-
-    d := gomail.NewPlainDialer( SMTP_HOST, 587, USER, PASSWORD )
-
-    // Send the email to Bob, Cora and Dan.
-    if err := d.DialAndSend( m ); err != nil {
-        panic(err)
-    }
-
-    task.Status = "done"
-
-    responseJSON, err := json.Marshal( task )
-
-    if err != nil {
-        panic( err )
-    }
-
-    pushTask( responseJSON )
-}
-
-func callback( task Task ) {
-
-    // File: os.File
-
-    file, err := ioutil.TempFile( "", "download" )
-    if err != nil {
-        panic( err )
-    }
 
 
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+    // POST handler
+    r.ParseForm()
 
-    // fmt.Println("Received ", taskPayloadJSON )
-    fmt.Println("Temp File ", file.Name() )
-    fmt.Println("Task", task )
-    mail( task )
+    // Build task object
+    task := Task {
+        UUID     : uuid.NewV4().String(),
+        SourceURL: r.FormValue("url"),
+        Format   : r.FormValue("format"),
+        Email    : r.FormValue("email"),
+        Status   : "created"}
+
+    // Add task to queue
+    pushTask(task)
+    //if err != nil {
+    //    http.Error( w, err, http.StatusInternalServerError )
+    //    return
+    //}
+    log.Print("Task added to queue:  %s\n", task)
+
+    w.WriteHeader(200)
+    w.Header().Set("Content-Type", "application/json")
+    response, _ := json.Marshal(task)
+    w.Write(response)
 
 }
 
-func observeTaskQueue() {
 
-    pubsub, err := client.Subscribe( "tasks" )
-    if err != nil {
-        panic(err)
-    }
+func observe() {
+    pubsub, err := client.Subscribe("tasks")
+    scream(err)
+    // Go do your thing forever
     for {
-
         msg, err := pubsub.ReceiveMessage()
-
-        if err != nil {
-            panic(err)
-        }
-
+        scream(err)
         var task Task
         err = json.Unmarshal( []byte( msg.Payload ), &task )
-        if err != nil {
-            panic(err)
+        scream(err)
+        switch task.Status {
+          case "created":
+            download(task)
+          case "downloaded":
+            convert(task)
+          case "converted":
+            mail(task)
         }
-
-        callback( task )
     }
+}
+
+
+
+// Util functions
+func scream(err error) {
+    if err != nil {
+      log.Fatal(err)
+      panic(err)
+    }
+}
+
+// Redis task helpers
+func pushTask(task Task) (err error) {
+    taskJSON, err := json.Marshal(task)
+    scream(err)
+    serializedTask := string(taskJSON)
+
+    redisResult := client.Publish("tasks", serializedTask)
+    err = redisResult.Err()
+    scream(err)
+
+    log.Print("Result %s\n", redisResult.String())
+    return nil
 }
 
 
@@ -229,9 +193,19 @@ func main() {
         DB:       0,  // use default DB
     })
 
-    go observeTaskQueue()
+    // Set subscribe in a goroutine to poll for tasks
+    go observe()
 
-    serveHTTP()
+    // External API
+    http.HandleFunc("/", indexHandler)
+    // Book route handler
+    http.HandleFunc("/save", saveHandler)
+
+    // Serve the static page
+    static := http.FileServer(http.Dir("static"))
+    http.Handle( "/static/", http.StripPrefix( "/static/", static ) )
+
+    log.Fatal( http.ListenAndServe( ":3001", nil ) )
 }
 
 
