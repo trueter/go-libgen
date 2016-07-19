@@ -7,8 +7,6 @@ import (
     "io/ioutil"
     "path/filepath"
     "fmt"
-    "github.com/satori/go.uuid"
-    "html/template"
     "log"
     "net/http"
     "net/url"
@@ -20,22 +18,9 @@ import (
 )
 
 
-type Task struct {
-    UUID string
-    SourceURL string `json:"sourceURL"`
-    Format string    `json:"format"`
-    Email string     `json:"email"`
-    Status string    `json:"status"`
-}
-
 var client * redis.Client
 
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-
-    t, _ := template.ParseFiles("form.html")
-    t.Execute(w, nil)
-}
 
 
 
@@ -152,62 +137,10 @@ func pushTask( taskJSONPayload []byte ) ( err error ) {
         return err
     }
 
-
-    fmt.Println("Result %s\n", redisResult.String() )
-
+    // fmt.Println( "Result %s\n", redisResult.String() )
     return nil
 }
 
-func post_handler(w http.ResponseWriter, r *http.Request) {
-
-    r.ParseForm()
-
-    task := &Task{
-        UUID     : uuid.NewV4().String(),
-        SourceURL: r.FormValue( "url" ),
-        Format   : r.FormValue( "format" ),
-        Email    : r.FormValue( "email" ),
-        Status   : "created"}
-
-    fmt.Println( "Task %s\n", task )
-
-    responseJSON, err := json.Marshal( task )
-    if err != nil {
-        http.Error( w, err.Error(), http.StatusInternalServerError )
-        return
-    }
-
-
-    err = pushTask( responseJSON )
-    if err != nil {
-        http.Error( w, err.Error(), http.StatusInternalServerError )
-        return
-    }
-
-
-    w.WriteHeader( 200 )
-    w.Header().Set( "Content-Type", "application/json" )
-    w.Write( responseJSON )
-
-    // format := ".mobi"
-
-    // //
-    // err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
-    // if err != nil {
-    //     panic( err )
-    // }
-
-    // // filePath = cleanAndDisarm( filePath )
-
-    // outFilename = outFilename
-    // fmt.Println("outFilename ", outFilename )
-    // fmt.Println("filePath ", filePath )
-    // //
-
-    // err, outPathAndFilename := convertBook(filePath, outFilename, format)
-    // fmt.Println("outPathAndFilename ", outPathAndFilename )
-
-}
 
 func mail( task Task, file * os.File ) {
 
@@ -253,9 +186,9 @@ func callback( task Task ) {
 
 }
 
-func observe() {
+func observeTaskQueue() {
 
-    pubsub, err := client.Subscribe("tasks")
+    pubsub, err := client.Subscribe( "tasks" )
     if err != nil {
         panic(err)
     }
@@ -277,6 +210,8 @@ func observe() {
     }
 }
 
+
+
 func main() {
 
     client = redis.NewClient(&redis.Options{
@@ -285,38 +220,9 @@ func main() {
         DB:       0,  // use default DB
     })
 
-    go observe()
+    go observeTaskQueue()
 
-
-
-    // format := ".mobi"
-
-    // err, outFilename, filePath := getBook( "http://www.orimi.com/pdf-test.pdf" )
-    // if err != nil {
-    //     panic( err )
-    // }
-
-    // // filePath = cleanAndDisarm( filePath )
-
-    // outFilename = outFilename
-    // fmt.Println("outFilename ", outFilename )
-    // fmt.Println("filePath ", filePath )
-    // //
-
-    // err, outPathAndFilename := convertBook(filePath, outFilename, format)
-    // fmt.Println("outPathAndFilename ", outPathAndFilename )
-    // if err != nil {
-    //     panic( err )
-    // }
-
-    http.HandleFunc( "/", indexHandler )
-
-    static := http.FileServer( http.Dir( "static" ) )
-
-    http.Handle( "/static/", http.StripPrefix( "/static/", static ) )
-    http.HandleFunc( "/save", post_handler )
-
-    log.Fatal( http.ListenAndServe( ":3001", nil ) )
+    serveHTTP()
 }
 
 
