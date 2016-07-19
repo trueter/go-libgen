@@ -4,8 +4,6 @@ import (
     "bytes"
     "encoding/json"
     "io"
-    "github.com/satori/go.uuid"
-    "html/template"
     "log"
     "net/http"
     "net/url"
@@ -17,27 +15,12 @@ import (
 )
 
 
-type Task struct {
-    UUID string
-    SourceURL string `json:"sourceURL"`
-    Format string    `json:"format"`
-    Email string     `json:"email"`
-    Status string    `json:"status"`
-    FilePath string  `json:"filePath"`
-}
 
 var client * redis.Client
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-    t, _ := template.ParseFiles("form.html")
-    t.Execute(w, nil)
-}
-
 
 func mail(task Task) (err error) {
   return nil
 }
-
 
 func download(task Task) (err error) {
     log.Print("Download Task Recieved: ", task)
@@ -99,7 +82,6 @@ func convert(task Task) (err error) {
     err = cmd.Run()
     scream(err)
     log.Print("%s File: %s", convertedFile)
-    //    log.Print("out:%s",out.String()) ??
 
     // Update the task
     task.Status = "converted"
@@ -111,32 +93,7 @@ func convert(task Task) (err error) {
 
 
 
-func saveHandler(w http.ResponseWriter, r *http.Request) {
-    // POST handler
-    r.ParseForm()
 
-    // Build task object
-    task := Task {
-        UUID     : uuid.NewV4().String(),
-        SourceURL: r.FormValue("url"),
-        Format   : r.FormValue("format"),
-        Email    : r.FormValue("email"),
-        Status   : "created"}
-
-    // Add task to queue
-    pushTask(task)
-    //if err != nil {
-    //    http.Error( w, err, http.StatusInternalServerError )
-    //    return
-    //}
-    log.Print("Task added to queue:  %s\n", task)
-
-    w.WriteHeader(200)
-    w.Header().Set("Content-Type", "application/json")
-    response, _ := json.Marshal(task)
-    w.Write(response)
-
-}
 
 
 func observe() {
@@ -186,26 +143,15 @@ func pushTask(task Task) (err error) {
 
 
 func main() {
-
     client = redis.NewClient(&redis.Options{
         Addr:     "localhost:6379",
         Password: "", // no password set
         DB:       0,  // use default DB
     })
-
     // Set subscribe in a goroutine to poll for tasks
     go observe()
 
-    // External API
-    http.HandleFunc("/", indexHandler)
-    // Book route handler
-    http.HandleFunc("/save", saveHandler)
-
-    // Serve the static page
-    static := http.FileServer(http.Dir("static"))
-    http.Handle( "/static/", http.StripPrefix( "/static/", static ) )
-
-    log.Fatal( http.ListenAndServe( ":3001", nil ) )
+    serveHTTP()
 }
 
 
