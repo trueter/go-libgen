@@ -33,12 +33,12 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
         Email    : r.FormValue("email"),
         Status   : "created"}
 
-    // Add task to queue
-    pushTask(task)
-    //if err != nil {
-    //    http.Error( w, err, http.StatusInternalServerError )
-    //    return
-    //}
+    err := pushTask(task)
+    if err != nil {
+      log.Fatal(err)
+      panic(err)
+    }
+
     log.Print("Task added to queue:  %s\n", task)
 
     w.WriteHeader(200)

@@ -14,12 +14,23 @@ test: echo $PATH
 test: which ebook-convert
 test: ebook-convert /path/to/rand/pdf.pdf /tmp/out.mobi
 
-``` 
+```
 
+## Build
+```
+go build .
+```
+should give you the `go-libgen` binary
+
+## Run
+
+```
+SENDER=woot@wootwoot.com USER=choo@choochoo.com PASSWORD=pooPoo go-libgen
+```
 Warning, don't use on public networks:
 the programm still contains a user controlled remote triggerable local file overwrite bug/vulnerabillety.
 Input passed to ebook-convert should be sanetized to not hold any specail characters (.. ../ / . ^ &    and so on)
-Local code execution not unlikely. 
+Local code execution not unlikely.
 allso vulnerable to: https://httpoxy.org/
 
 
@@ -31,7 +42,3 @@ tbd:
 - [ ] find a way to exec ebook-convert with the least privileges.. Sandbox if possible.
 - [ ] add convert_to_format choice
 - [ ] much more
-
-
-
-
