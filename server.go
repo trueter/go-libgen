@@ -2,61 +2,53 @@ package main
 
 import (
     "encoding/json"
-    "fmt"
     "github.com/satori/go.uuid"
     "html/template"
     "net/http"
     "log"
 )
 
-
 func serveHTTP( ) {
+    // External API
+    http.HandleFunc("/", indexHandler)
+    // Book route handler
+    http.HandleFunc("/save", saveHandler)
 
-    http.HandleFunc( "/", IndexHandleFunc )
+    // Serve the static page
+    static := http.FileServer(http.Dir("static"))
+    http.Handle( "/static/", http.StripPrefix("/static/", static))
 
-    static := http.FileServer( http.Dir( "static" ) )
-
-    http.Handle( "/static/", http.StripPrefix( "/static/", static ) )
-    http.HandleFunc( "/save", PostHandleFunc )
-
-    log.Fatal( http.ListenAndServe( ":3001", nil ) )
+    log.Fatal( http.ListenAndServe( ":3001", nil ))
 }
 
-
-func PostHandleFunc( w http.ResponseWriter, r *http.Request ) {
-
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+    // POST handler
     r.ParseForm()
 
-    task := &Task{
+    // Build task object
+    task := Task {
         UUID     : uuid.NewV4().String(),
-        SourceURL: r.FormValue( "url" ),
-        Format   : r.FormValue( "format" ),
-        Email    : r.FormValue( "email" ),
+        SourceURL: r.FormValue("url"),
+        Format   : r.FormValue("format"),
+        Email    : r.FormValue("email"),
         Status   : "created"}
 
-    fmt.Println( "Task %s\n", task )
-
-    responseJSON, err := json.Marshal( task )
+    err := pushTask(task)
     if err != nil {
-        http.Error( w, err.Error(), http.StatusInternalServerError )
-        return
+      log.Fatal(err)
+      panic(err)
     }
 
+    log.Print("Task added to queue:  %s\n", task)
 
-    err = pushTask( responseJSON )
-    if err != nil {
-        http.Error( w, err.Error(), http.StatusInternalServerError )
-        return
-    }
+    w.WriteHeader(200)
+    w.Header().Set("Content-Type", "application/json")
+    response, _ := json.Marshal(task)
+    w.Write(response)
 
-
-    w.WriteHeader( 200 )
-    w.Header().Set( "Content-Type", "application/json" )
-    w.Write( responseJSON )
 }
 
-func IndexHandleFunc(w http.ResponseWriter, r *http.Request) {
-
+func indexHandler(w http.ResponseWriter, r *http.Request) {
     t, _ := template.ParseFiles("form.html")
     t.Execute(w, nil)
 }
