@@ -23,3 +23,6 @@ _testmain.go
 *.test
 *.prof
 gin-bin
+
+*.swp
+go-libgen

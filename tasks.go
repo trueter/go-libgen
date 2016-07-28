@@ -8,6 +8,7 @@ import (
     "log"
     "os"
     "os/exec"
+	"strings"
 )
 
 // Task methods
@@ -20,7 +21,7 @@ func mail(task Task) (result Task, err error) {
     mailDialer := gomail.NewPlainDialer(SMTP_HOST, 587, USER, PASSWORD)
     // Get the file
     tmpDir := os.TempDir()
-    filePath := tmpDir + task.UUID
+    filePath := tmpDir + "/" + task.UUID
     fileName := filePath + "." + task.Format
     file, err := os.Open(fileName)
     if err != nil {
@@ -33,7 +34,9 @@ func mail(task Task) (result Task, err error) {
     message.SetHeader("To", task.Email)
     message.SetHeader("Subject", "Ebkcnvrt")
     message.SetBody("text/plain", body)
-    message.Attach(file.Name())
+	sourceURLParts := strings.Split(task.SourceURL, "/")
+	attachmentName := sourceURLParts[len(sourceURLParts) -1] + "." + task.Format
+    message.Attach(file.Name(), gomail.Rename(attachmentName))
     // Sendmail
     err = mailDialer.DialAndSend(message)
     if err != nil {
@@ -53,7 +56,7 @@ func download(task Task) (result Task, err error) {
     log.Print("Download Task Recieved: ", task)
     // Create temp file
     tmpDir := os.TempDir()
-    filePath := tmpDir + task.UUID
+    filePath := tmpDir + "/" + task.UUID
     file, err := os.Create(filePath)
     if err != nil {
         return task, err
@@ -80,7 +83,7 @@ func download(task Task) (result Task, err error) {
 
 func convert(task Task) (result Task, err error) {
     // Assuming temp files are in tmp
-    tmpDir := os.TempDir()
+    tmpDir := os.TempDir() + "/"
     tmpFile := tmpDir + task.UUID
     pdfFile := tmpDir + task.UUID + ".pdf"
     convertedFile := tmpDir + task.UUID + "." + task.Format
