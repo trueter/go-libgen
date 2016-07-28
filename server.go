@@ -49,6 +49,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-    t, _ := template.ParseFiles("form.html")
+    t, _ := template.ParseFiles("static/form.html")
     t.Execute(w, nil)
 }
